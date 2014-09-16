@@ -1,72 +1,74 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Management;
 using System.Windows.Forms;
+using VisualSVNAuthzEditor.LDAP;
 
 namespace VisualSVNAuthzEditor
 {
 	public partial class FormMain : Form
 	{
-		const string ReposURL = "https://srv-tfs.ihs.internal.corp:8443/svn/gf";
-
 		readonly List<SecuredObjectListItem> _securedObjectsList = new List<SecuredObjectListItem>();
 
 		public FormMain()
 		{
 			InitializeComponent();
 
-			var sdClass = new ManagementClass(@"\root\VisualSVN", "VisualSVN_SecurityDescriptor", null);
+			var ldapHelper = new LDAPHelper();
+			ldapHelper.LoadMapping();
+
+			var sdClass = new ManagementClass(@"\\srv-tfs\root\VisualSVN", "VisualSVN_SecurityDescriptor", null);
 
 			foreach (var sd in sdClass.GetInstances().Cast<ManagementObject>())
 			{
 				var assocObjectRef = (string)sd.Properties["AssociatedObject"].Value;
 
-				var assocObject = new ManagementObject(@"\root\VisualSVN", assocObjectRef, null);
-				var assocClassName = assocObject.ClassPath.ClassName;
-
-				var permissions = sd.Properties["Permissions"].Value as ManagementBaseObject[];
-
-				var securedObject = new SecuredObjectListItem { AccociatedObject = assocObject };
-				foreach (var permObj in permissions)
+				try
 				{
-					var level = (uint)permObj.Properties["AccessLevel"].Value;
-					var sid = (string)((ManagementBaseObject)permObj.Properties["Account"].Value).Properties["SID"].Value;
+					var assocObject = new ManagementObject(@"\\srv-tfs\root\VisualSVN", assocObjectRef, null);
 
-					securedObject.Permissions.Add(new PermissionsListItem { SID = sid, PermissionsObject = permObj, Parent = securedObject });
+					//var pds = assocObject.Properties.Cast<PropertyData>().ToArray();
+
+					//var name = (string)assocObject.Properties["Name"].Value;
+					var url = (string)assocObject.Properties["URL"].Value;
+
+					var displayName = url + " (" + assocObject.ClassPath.ClassName + ")";
+
+					var permissions = sd.Properties["Permissions"].Value as ManagementBaseObject[];
+
+					var securedObject = new SecuredObjectListItem { AccociatedObject = assocObject, DisplayName = displayName };
+					foreach (var permObj in permissions)
+					{
+						var level = (uint)permObj.Properties["AccessLevel"].Value;
+						var sid = (string)((ManagementBaseObject)permObj.Properties["Account"].Value).Properties["SID"].Value;
+
+						securedObject.Permissions.Add(new PermissionsListItem { SID = sid, Principal = ldapHelper.ConvertSid(sid), PermissionsObject = permObj, Parent = securedObject });
+					}
+
+					_securedObjectsList.Add(securedObject);
 				}
-
-				_securedObjectsList.Add(securedObject);
+				catch (Exception ex)
+				{
+					var securedObject = new SecuredObjectListItem { DisplayName = "Exception: " + ex.Message + " (" + assocObjectRef + ")" };
+					_securedObjectsList.Add(securedObject);
+				}
 			}
 
 			listBoxSecuredObjects.Items.AddRange(_securedObjectsList.Cast<object>().ToArray());
+		}
 
-			/*
-			var repoClass = new ManagementClass(@"\root\VisualSVN", "VisualSVN_Repository", null);
-			var repo = repoClass
-				.GetInstances()
-				.Cast<ManagementObject>()
-				.First(r => r.Properties["Name"].Value.ToString() == "test")
-				//.ToArray()
-			;
+		void listBoxSecuredObjects_SelectedIndexChanged(object sender, System.EventArgs e)
+		{
+			SecuredObjectSelectionChanged();
+		}
 
-			repo.GetMethodParameters("GetSecurity");
-			*/
-			/*
-var repoClass = new ManagementClass(@"\\bym1d048\root\VisualSVN", "VisualSVN_Repository", null);
-
-var inst = repoClass.CreateInstance();
-
-//inst.Dump();
-inst.SetPropertyValue("Name", "docs");
-
-var gs1 = repoClass.InvokeMethod("GetGlobalSecurity", null, null);
-var gs2 = inst.InvokeMethod("GetGlobalSecurity", null, null);
-
-var sids = (gs2.Properties["Permissions"].Value as ManagementBaseObject[]).Select(p => (string)(p.Properties["Account"].Value as ManagementBaseObject).Properties["SID"].Value).ToArray();
-
-var sid = new SecurityIdentifier(sids[0]);
-sid.Translate(typeof(System.Security.Principal.NTAccount)).Dump();
-			 */
+		void SecuredObjectSelectionChanged()
+		{
+			var securedObject = _securedObjectsList[listBoxSecuredObjects.SelectedIndex];
+			
+			listBoxPermissions.Items.Clear();
+			listBoxPermissions.Items.AddRange(securedObject.Permissions.Cast<object>().ToArray());
 		}
 	}
 }

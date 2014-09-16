@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows.Forms;
+using VisualSVNAuthzEditor.Properties;
 
 namespace VisualSVNAuthzEditor
 {
@@ -11,6 +12,13 @@ namespace VisualSVNAuthzEditor
 		[STAThread]
 		static void Main()
 		{
+			if(Settings.Default.IsFirstRun)
+			{
+				Settings.Default.Upgrade();
+				Settings.Default.IsFirstRun = false;
+				Settings.Default.Save();
+			}
+
 			Application.EnableVisualStyles();
 			Application.SetCompatibleTextRenderingDefault(false);
 			Application.Run(new FormMain());

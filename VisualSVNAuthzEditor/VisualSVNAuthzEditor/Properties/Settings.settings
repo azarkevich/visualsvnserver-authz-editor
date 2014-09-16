@@ -1,7 +1,21 @@
 ﻿<?xml version='1.0' encoding='utf-8'?>
-<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)">
-  <Profiles>
-    <Profile Name="(Default)" />
-  </Profiles>
-  <Settings />
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="VisualSVNAuthzEditor.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="CachedMappings" Type="System.Collections.Specialized.StringCollection" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="IsFirstRun" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="LDAP_DirEntry" Type="System.String" Scope="User">
+      <Value Profile="(Default)">LDAP://ihs.internal.corp:389/OU=Users,OU=BYM1,OU=EMEA,DC=ihs,DC=internal,DC=corp</Value>
+    </Setting>
+    <Setting Name="LDAP_Filter" Type="System.String" Scope="User">
+      <Value Profile="(Default)">(objectClass=user)</Value>
+    </Setting>
+    <Setting Name="LDAP_DisplayNameAttribute" Type="System.String" Scope="User">
+      <Value Profile="(Default)">displayName</Value>
+    </Setting>
+  </Settings>
 </SettingsFile>
